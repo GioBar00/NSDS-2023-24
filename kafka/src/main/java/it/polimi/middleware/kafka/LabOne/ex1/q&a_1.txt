@@ -1,0 +1,5 @@
+1) What happens if one consumer fails?
+The other continues without problems.
+2) What happens if you restart it?
+Since the consumers are stateless, it will continue consuming from the last committed offset.
+Since auto-commit is enabled, it could happen that the consumer processes the messages that have not been committed twice.

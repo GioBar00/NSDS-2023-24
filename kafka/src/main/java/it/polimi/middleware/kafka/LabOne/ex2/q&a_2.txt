@@ -1,0 +1,4 @@
+1) What happens if one consumer fails?
+After a given point in time, Zookeeper will redistribute the partitions of the topics to the consumers that are still alive.
+2) What happens if start multiple consumers?
+If more partitions are available then they are split between the consumers.
