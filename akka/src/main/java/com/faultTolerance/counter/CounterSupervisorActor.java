@@ -16,6 +16,7 @@ public class CounterSupervisorActor extends AbstractActor {
             Duration.ofMinutes(1), // Within what time period
             DeciderBuilder.match(Exception.class, e -> SupervisorStrategy.restart())
                 .build());
+	// using resume(), the counter will not be reset, using stop(), the following messages will not e delivered
 
     @Override
     public SupervisorStrategy supervisorStrategy() {
