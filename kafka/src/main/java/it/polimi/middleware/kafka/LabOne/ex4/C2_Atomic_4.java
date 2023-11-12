@@ -57,6 +57,7 @@ public class C2_Atomic_4 {
         producerProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         producerProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         producerProps.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG, producerTransactionalId);
+        // No need to set idempotence to true?? it is implied by the transactional id?? (https://stackoverflow.com/questions/60283718/difference-between-kafka-idempotent-and-transactional-producer-setup)
         producerProps.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, String.valueOf(true));
 
         final KafkaProducer<String, String> producer = new KafkaProducer<>(producerProps);
@@ -65,59 +66,74 @@ public class C2_Atomic_4 {
         while (true) {
             final ConsumerRecords<String, String> records = consumer.poll(Duration.of(5, ChronoUnit.MINUTES));
             producer.beginTransaction();
+            try {
+                Map<String, Integer> modifiedKeys = new HashMap<>();
 
-            Map<String, Integer> modifiedKeys = new HashMap<>();
-
-            for (final ConsumerRecord<String, String> record : records) {
-                System.out.println("Partition: " + record.partition() +
-                        "\tOffset: " + record.offset() +
-                        "\tKey: " + record.key() +
-                        "\tValue: " + record.value()
-                );
-                if (modifiedKeys.containsKey(record.key())) {
-                    modifiedKeys.put(record.key(), modifiedKeys.get(record.key()) + 1);
-                } else {
-                    modifiedKeys.put(record.key(), 1);
+                for (final ConsumerRecord<String, String> record : records) {
+                    System.out.println("Partition: " + record.partition() +
+                            "\tOffset: " + record.offset() +
+                            "\tKey: " + record.key() +
+                            "\tValue: " + record.value()
+                    );
+                    if (modifiedKeys.containsKey(record.key())) {
+                        modifiedKeys.put(record.key(), modifiedKeys.get(record.key()) + 1);
+                    } else {
+                        modifiedKeys.put(record.key(), 1);
+                    }
                 }
-            }
-
-            List<Future<RecordMetadata>> futures = new ArrayList<>();
-            for (String key : modifiedKeys.keySet()) {
-                int value = mess_per_key.get(key) + modifiedKeys.get(key);
-                futures.add(producer.send(new ProducerRecord<>(outputTopic, key, Integer.toString(value))));
-            }
-            // wait for all the futures to be completed
-            for (Future<RecordMetadata> future : futures) {
-                try {
-                    RecordMetadata ack = future.get();
-                    System.out.println("Ack for topic " + ack.topic() + ", partition " + ack.partition() + ", offset " + ack.offset());
-                } catch (InterruptedException | ExecutionException e) {
-                    e.printStackTrace();
-                    producer.flush();
-                    /*! Aborts */
-                    producer.abortTransaction();
+                // NO NEED FOR FUTURES FOR THE PRODUCER, BECAUSE IT IS TRANSACTIONAL
+                /*
+                List<Future<RecordMetadata>> futures = new ArrayList<>();
+                for (String key : modifiedKeys.keySet()) {
+                    int value = mess_per_key.get(key) + modifiedKeys.get(key);
+                    futures.add(producer.send(new ProducerRecord<>(outputTopic, key, Integer.toString(value))));
                 }
-            }
+                // wait for all the futures to be completed
+                for (Future<RecordMetadata> future : futures) {
+                    try {
+                        RecordMetadata ack = future.get();
+                        System.out.println("Ack for topic " + ack.topic() + ", partition " + ack.partition() + ", offset " + ack.offset());
+                    } catch (InterruptedException | ExecutionException e) {
+                        e.printStackTrace();
+                        producer.flush();
 
-            // The producer manually commits the offsets for the consumer within the transaction
-            final Map<TopicPartition, OffsetAndMetadata> map = new HashMap<>();
-            for (final TopicPartition partition : records.partitions()) {
-                final List<ConsumerRecord<String, String>> partitionRecords = records.records(partition);
-                final long lastOffset = partitionRecords.get(partitionRecords.size() - 1).offset();
-                map.put(partition, new OffsetAndMetadata(lastOffset + 1));
-            }
-
-            // update the number of messages received for each key
-            for (String key : modifiedKeys.keySet()) {
-                if (mess_per_key.containsKey(key)) {
-                    mess_per_key.put(key, mess_per_key.get(key) + modifiedKeys.get(key));
-                } else {
-                    mess_per_key.put(key, modifiedKeys.get(key));
+                        producer.abortTransaction();
+                    }
                 }
-            }
+                */
+                for (String key : modifiedKeys.keySet()) {
+                    int value;
+                    if (mess_per_key.containsKey(key)) {
+                        value = mess_per_key.get(key) + modifiedKeys.get(key);
+                    } else {
+                        value = modifiedKeys.get(key);
+                    }
+                    producer.send(new ProducerRecord<>(outputTopic, key, Integer.toString(value)));
+                }
 
-            producer.sendOffsetsToTransaction(map, consumer.groupMetadata());
-            producer.commitTransaction();
+                // The producer manually commits the offsets for the consumer within the transaction
+                final Map<TopicPartition, OffsetAndMetadata> map = new HashMap<>();
+                for (final TopicPartition partition : records.partitions()) {
+                    final List<ConsumerRecord<String, String>> partitionRecords = records.records(partition);
+                    final long lastOffset = partitionRecords.get(partitionRecords.size() - 1).offset();
+                    map.put(partition, new OffsetAndMetadata(lastOffset + 1));
+                }
+
+                producer.sendOffsetsToTransaction(map, consumer.groupMetadata());
+                producer.commitTransaction();
+
+                // update the number of messages received for each key
+                for (String key : modifiedKeys.keySet()) {
+                    if (mess_per_key.containsKey(key)) {
+                        mess_per_key.put(key, mess_per_key.get(key) + modifiedKeys.get(key));
+                    } else {
+                        mess_per_key.put(key, modifiedKeys.get(key));
+                    }
+                }
+            } catch (final Exception e) {
+                e.printStackTrace();
+                producer.abortTransaction();
+            }
         }
     }
 

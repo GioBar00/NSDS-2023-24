@@ -11,7 +11,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 public class BasicProducer_4 {
-    private static final String defaultTopic = "ex_2";
+    private static final String defaultTopic = "ex4";
 
     private static final int numMessages = 100000;
     private static final int waitBetweenMsgs = 5000;

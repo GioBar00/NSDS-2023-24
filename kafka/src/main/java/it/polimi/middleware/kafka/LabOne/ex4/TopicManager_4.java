@@ -7,7 +7,7 @@ import java.util.Properties;
 import java.util.Set;
 
 public class TopicManager_4 {
-    private static final String defaultTopicName = "ex_4";
+    private static final String defaultTopicName = "ex4";
     private static final int defaultTopicPartitions = 2;
     private static final short defaultReplicationFactor = 1;
 
