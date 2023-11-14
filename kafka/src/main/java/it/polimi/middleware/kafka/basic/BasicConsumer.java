@@ -39,7 +39,7 @@ public class BasicConsumer {
         KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props);
         consumer.subscribe(Collections.singletonList(topic));
         while (true) {
-            final ConsumerRecords<String, String> records = consumer.poll(Duration.of(5, ChronoUnit.MINUTES));
+            final ConsumerRecords<String, String> records = consumer.poll(Duration.of(5, ChronoUnit.SECONDS));
             for (final ConsumerRecord<String, String> record : records) {
                 System.out.print("Consumer group: " + groupId + "\t");
                 System.out.println("Partition: " + record.partition() +
