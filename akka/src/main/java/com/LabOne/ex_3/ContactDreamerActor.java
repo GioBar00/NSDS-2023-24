@@ -49,7 +49,7 @@ public class ContactDreamerActor extends AbstractActor {
     {
         contactsList.tell(msg, self());
     }
-    static Props props() {
+    public static Props props() {
         return Props.create(ContactDreamerActor.class);
     }
 

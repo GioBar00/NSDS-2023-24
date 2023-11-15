@@ -22,7 +22,9 @@ public class ContactsListActor extends AbstractActor{
                 .build();
     }
 
-    private void putContact(PutMsg msg){
+    private void putContact(PutMsg msg) throws Exception {
+        if(msg.getName().equals("Fail"))
+            throw new Exception("Failuro Charm");
         contactList.put(msg.getName(),msg.getEmail());
         System.out.println("ContactListActor: put or replaced contact with name " + msg.getName() + " with email " + msg.getEmail());
     }

@@ -8,24 +8,6 @@ import scala.sys.Prop;
 
 public class ServerActor extends AbstractActorWithStash {
 
-    private class PingAndSender {
-        private final Ping ping;
-        private final ActorRef sender;
-
-        public PingAndSender(Ping msg, ActorRef sender) {
-            this.ping = msg;
-            this.sender = sender;
-        }
-
-        public ActorRef getSender() {
-            return sender;
-        }
-
-        public Ping getPing() {
-            return ping;
-        }
-    }
-
     private boolean sleeping = false;
     @Override
     public Receive createReceive() {
@@ -40,11 +22,7 @@ public class ServerActor extends AbstractActorWithStash {
                 })
                 .match(Ping.class, msg -> {
                     sender().tell(new Pong(msg.getMessage()), self());
-                    System.out.println("ServerActor: I got you!");
-                })
-                .match(PingAndSender.class, msg -> {
-                    msg.getSender().tell(new Pong(msg.getPing().getMessage()), self());
-                    System.out.println("ServerActor: Sorry, I had other things to do XD");
+                    System.out.println("ServerActor: I got you! - " + msg.getMessage());
                 })
                 .build();
 
@@ -59,9 +37,8 @@ public class ServerActor extends AbstractActorWithStash {
                 })
                 .match(Ping.class, msg -> {
                     System.out.println("ServerActor: five more minutes XO");
-                    self().tell(new PingAndSender(msg, sender()), self());
+                    stash();
                 })
-                .match(PingAndSender.class, msg -> stash())
                 .build();
     }
 
