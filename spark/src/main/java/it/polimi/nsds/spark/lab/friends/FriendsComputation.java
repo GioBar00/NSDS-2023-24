@@ -44,6 +44,7 @@ public class FriendsComputation {
                 .csv(filePath + "files/friends/friends.csv");
 
         // TODO
+<<<<<<< Updated upstream
         boolean has_changed = true;
         long old_count = input.count();
         long new_count = 0;
@@ -62,5 +63,19 @@ public class FriendsComputation {
 
 
         spark.close();
+=======
+        final Dataset<Row> input2 =input; // Does this really copy?
+        // SELECT T.person, T2.friend FROM T, T2 WHERE T.friend in T2.person
+        // T.friend = T2.person. And... Want to add, if not exists, T.person, T2.friend
+        // ALL TRANSFORMATION ON IMMUTABLE DATA! CREATING NEW DATABASE! STILL THERE! CACHE IT
+        final Dataset<Row> friendsOfFriends = input
+                .where(input.col("friend").and(input2.col("person"))).select(input.col("person"), input2.col("friend"));
+        final Dataset<Row> toAdd = friendsOfFriends
+                .drop()
+                .where(friendsOfFriends.col("person").equalTo(input.col("person")).and(friendsOfFriends.col("friend").equalTo(input.col("friend"))));
+        spark.close();
+        input.show();
+        toAdd.show();
+>>>>>>> Stashed changes
     }
 }

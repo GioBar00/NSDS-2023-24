@@ -69,6 +69,7 @@ public class Bank {
 
         // Q1. Total amount of withdrawals for each person
         System.out.println("Total amount of withdrawals for each person");
+<<<<<<< Updated upstream
         final Dataset<Row> totalwithdrawls = withdrawals
                 .groupBy("account")
                         .sum("amount")
@@ -111,6 +112,69 @@ public class Bank {
                 .join(deposits, withdrawals.col("account").equalTo(deposits.col("account")),"outer");
 
 
+=======
+
+        // TODO
+        final Dataset<Row> sumWithdrawals = withdrawals
+                .groupBy("person")
+                .sum("amount")
+                .select("person", "sum(amount)");
+
+        // Used in two different queries
+        if (useCache) {
+            sumWithdrawals.cache();
+        }
+        // Presents the result in a table-like way good for debugging!
+        sumWithdrawals.show();
+
+        // Q2. Person with the maximum total amount of withdrawals
+        System.out.println("Person with the maximum total amount of withdrawals");
+
+        // TODO
+        final long maxTotal = sumWithdrawals
+                .agg(max("sum(amount)"))
+                .first()
+                .getLong(0);
+
+        final Dataset<Row> maxWithdrawals = sumWithdrawals
+                .filter(sumWithdrawals.col("sum(amount)").equalTo(maxTotal));
+
+        maxWithdrawals.show();
+
+
+        // Q3 Accounts with negative balance
+        System.out.println("Accounts with negative balance");
+
+        // TODO
+
+        final Dataset<Row> totWithdrawals = withdrawals
+                .groupBy("account")
+                .sum("amount")
+                .drop("person")
+                .as("totalWithdrawals");
+
+        final Dataset<Row> totDeposits = deposits
+                .groupBy("account")
+                .sum("amount")
+                .drop("person")
+                .as("totalDeposits");
+
+        // Q4 Accounts in descending order of balance
+        System.out.println("Accounts in descending order of balance");
+        // SHOULD CHANGE, IF NO DEPOSITS/... THEN SET 0!
+        //final Dataset<Row> sumDeposits = deposits
+        //        .groupBy("person")
+        //        .sum("amount")
+        //        .select("person", "sum(amount)");
+        final Dataset<Row> sumDeposits = totWithdrawals
+                .join(totDeposits, totDeposits.col("account").equalTo(totWithdrawals.col("account")))
+
+                //.transform(totWithdrawals.col("amount"), (x)->{ x = x*-1;})
+                //.sum(totDeposits.col("amount"), totWithdrawals.col("amount"))
+                .select("account");
+        //final Dataset<Row> accountsDescending = sumDeposits
+        //        .filter());
+>>>>>>> Stashed changes
 
         spark.close();
 

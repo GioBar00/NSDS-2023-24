@@ -19,10 +19,17 @@ import static org.apache.spark.sql.functions.window;
 /**
  * This code snippet exemplifies a typical scenario in event processing: merging
  * incoming events with some background knowledge.
+<<<<<<< Updated upstream
  * <p>
  * A static dataset (read from a file) classifies products (associates products to the
  * class they belong to).  A stream of products is received from a socket.
  * <p>
+=======
+ *
+ * A static dataset (read from a file) classifies products (associates products to the
+ * class they belong to).  A stream of products is received from a socket.
+ *
+>>>>>>> Stashed changes
  * We want to count the number of products of each class in the stream. To do so, we
  * need to integrate static knowledge (product classification) and streaming data
  * (occurrences of products in the stream).
@@ -48,6 +55,10 @@ public class EventEnrichment {
 
         final Dataset<Row> inStream = spark
                 .readStream()
+<<<<<<< Updated upstream
+=======
+                /*! Rate is for debugging there is ... that creates a map with the integer value, ... Time might be growing, just for debugging*/
+>>>>>>> Stashed changes
                 .format("rate")
                 .option("rowsPerSecond", 1)
                 .load();
@@ -59,9 +70,18 @@ public class EventEnrichment {
                 .schema(productClassificationSchema)
                 .csv(filePath + "files/enrichment/product_classification.csv");
 
+<<<<<<< Updated upstream
         // TODO
         Dataset<Row> inStreamDF = inStream.toDF("product");
 
+=======
+
+        // TODO
+        /*! Here we just change the columns names, for the join... */
+        Dataset<Row> inStreamDF = inStream.toDF("timestamp", "product");
+
+        /*! We query, creating a query and then using the stream commands we start it and print them as output in the console*/
+>>>>>>> Stashed changes
         final StreamingQuery query = inStreamDF
                 .join(productsClassification, productsClassification.col("product").equalTo(inStreamDF.col("product")))
                 .groupBy(
@@ -69,10 +89,25 @@ public class EventEnrichment {
                         productsClassification.col("classification")
                 )
                 .count()
+<<<<<<< Updated upstream
+=======
+                /*! End of query and write to console + start the query*/
+>>>>>>> Stashed changes
                 .writeStream()
                 .outputMode("update")
                 .format("console")
                 .start();
+<<<<<<< Updated upstream
+=======
+        try {
+            /*! We need to await the termination to see the terminal console while the task is running! */
+            query.awaitTermination();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+>>>>>>> Stashed changes
 
         spark.close();
     }
