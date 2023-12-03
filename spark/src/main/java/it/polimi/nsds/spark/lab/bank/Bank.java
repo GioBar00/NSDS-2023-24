@@ -102,7 +102,6 @@ public class Bank {
         System.out.println("Accounts with negative balance");
 
         // TODO
-
         final Dataset<Row> totWithdrawals = withdrawals
                 .groupBy("account")
                 .sum("amount")
@@ -115,21 +114,37 @@ public class Bank {
                 .drop("person")
                 .as("totalDeposits");
 
+        final Dataset<Row> negativeAccounts = totWithdrawals
+                .join(totDeposits, totDeposits.col("account").equalTo(totWithdrawals.col("account")), "left_outer")
+                .filter(totDeposits.col("sum(amount)").isNull().and(totWithdrawals.col("sum(amount)").gt(0)).or
+                        (totWithdrawals.col("sum(amount)").gt(totDeposits.col("sum(amount)")))
+                ).select(totWithdrawals.col("account"));
+
+        // Q3 Alternative approach
+        System.out.println("Accounts with negative balance (second approach)");
+
+        Dataset<Row> totalOps = withdrawals
+                .withColumn("amount", col("amount").multiply(-1))
+                .union(deposits);
+
+        Dataset<Row> accountBalances = totalOps
+                .groupBy("account")
+                .sum();
+
+        accountBalances.cache();
+
+        Dataset<Row> negativeAccounts2 = accountBalances
+                .filter(col("sum(amount)").lt(0));
+
+        negativeAccounts2.show();
+
         // Q4 Accounts in descending order of balance
         System.out.println("Accounts in descending order of balance");
-        // SHOULD CHANGE, IF NO DEPOSITS/... THEN SET 0!
-        //final Dataset<Row> sumDeposits = deposits
-        //        .groupBy("person")
-        //        .sum("amount")
-        //        .select("person", "sum(amount)");
-        final Dataset<Row> sumDeposits = totWithdrawals
-                .join(totDeposits, totDeposits.col("account").equalTo(totWithdrawals.col("account")))
 
-                //.transform(totWithdrawals.col("amount"), (x)->{ x = x*-1;})
-                //.sum(totDeposits.col("amount"), totWithdrawals.col("amount"))
-                .select("account");
-        //final Dataset<Row> accountsDescending = sumDeposits
-        //        .filter());
+        Dataset<Row> sortedAccountsBalances = accountBalances
+                .sort(desc("sum(amount)"));
+        sortedAccountsBalances.show();
+
 
         spark.close();
 

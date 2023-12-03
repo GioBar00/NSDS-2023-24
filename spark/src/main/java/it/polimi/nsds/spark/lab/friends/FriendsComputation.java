@@ -36,25 +36,49 @@ public class FriendsComputation {
         fields.add(DataTypes.createStructField("friend", DataTypes.StringType, false));
         final StructType schema = DataTypes.createStructType(fields);
 
-        final Dataset<Row> input = spark
+        Dataset<Row> closure = spark
                 .read()
                 .option("header", "false")
                 .option("delimiter", ",")
                 .schema(schema)
                 .csv(filePath + "files/friends/friends.csv");
 
-        // TODO
-        final Dataset<Row> input2 =input; // Does this really copy?
+        long oldCardinality;
+        long closureCardinality = closure.count();
+
+        long iteration = 0;
+
+        do {
+
+            Dataset<Row> copy = closure;
+            oldCardinality = closureCardinality;
+
+            closure = closure
+                    .withColumnRenamed("friend", "to-join")
+                    .join(copy.withColumnRenamed("person", "to-join"), "to-join")
+                    .drop("to-join");
+
+            closure = closure.union(copy).distinct();
+
+            if (useCache) {
+                closure.cache();
+                copy.unpersist();
+            }
+
+            closureCardinality = closure.count();
+
+            iteration++;
+            System.out.println("Iteration " + iteration + " - cardinality: " + closureCardinality);
+
+        }
+        while (oldCardinality != closureCardinality);
+
+        closure.orderBy("person", "friend").show();
+
+            // Does this really copy?
         // SELECT T.person, T2.friend FROM T, T2 WHERE T.friend in T2.person
         // T.friend = T2.person. And... Want to add, if not exists, T.person, T2.friend
         // ALL TRANSFORMATION ON IMMUTABLE DATA! CREATING NEW DATABASE! STILL THERE! CACHE IT
-        final Dataset<Row> friendsOfFriends = input
-                .where(input.col("friend").and(input2.col("person"))).select(input.col("person"), input2.col("friend"));
-        final Dataset<Row> toAdd = friendsOfFriends
-                .drop()
-                .where(friendsOfFriends.col("person").equalTo(input.col("person")).and(friendsOfFriends.col("friend").equalTo(input.col("friend"))));
         spark.close();
-        input.show();
-        toAdd.show();
     }
 }

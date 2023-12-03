@@ -67,13 +67,13 @@ public class EventEnrichment {
                 .schema(productClassificationSchema)
                 .csv(filePath + "files/enrichment/product_classification.csv");
 
-        // TODO
         /*! Here we just change the columns names, for the join... */
-        Dataset<Row> inStreamDF = inStream.toDF("timestamp", "product");
+        //Dataset<Row> inStreamDF = inStream.toDF("timestamp", "product");
+        Dataset<Row> inStreamDF = inStream.withColumnRenamed("value", "product");
 
         /*! We query, creating a query and then using the stream commands we start it and print them as output in the console*/
         final StreamingQuery query = inStreamDF
-                .join(productsClassification, productsClassification.col("product").equalTo(inStreamDF.col("product")))
+                .join(productsClassification, "product")
                 .groupBy(
                         window(col("timestamp"), "30 seconds", "10 seconds"),
                         productsClassification.col("classification")

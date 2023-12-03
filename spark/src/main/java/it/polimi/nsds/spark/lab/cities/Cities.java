@@ -10,11 +10,13 @@ import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 
+
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
-import static org.apache.spark.sql.functions.col;
+import static org.apache.spark.sql.functions.*;
 
 public class Cities {
     public static void main(String[] args) throws TimeoutException {
@@ -58,10 +60,14 @@ public class Cities {
         final Dataset<Row> q1 = citiesPopulation
                 .join(citiesRegions, citiesPopulation.col("city").equalTo(citiesRegions.col("city")))
                 .groupBy(citiesRegions.col("region"))
-                .sum("population")
-                .select("region", "sum(population)");
+                /*! Automatically generated sum column by the sum function */
+                //.sum("population")
+                .agg(sum("population").as("tot-population"))
+                .drop("id");
 
         q1.show();
+
+
         final Dataset<Row> regionCityCount = citiesRegions
                 .groupBy("region")
                 .count()
@@ -70,22 +76,25 @@ public class Cities {
 
         //final Dataset<Row> regionCityCountAndMostPopulated =
 
-        final Dataset<Row> q2_pre = citiesRegions
-                .join(citiesPopulation, citiesPopulation.col("city").equalTo(citiesRegions.col("city")))
+        final Dataset<Row> q2 = citiesRegions
+                .join(citiesPopulation, "city")
                 .groupBy("region")
-                .max("population")
-                .select("region", "max(population)")
-                ;
-
-        final Dataset<Row> q2 = q2_pre
-                .join(regionCityCount, regionCityCount.col("region").equalTo(q2_pre.col("region")))
-                .select(regionCityCount.col("region").as("region_1"),col("max(population)"), col("count") );
+                .agg(count("city"), max("population"));
 
         q2.show();
 
         // JavaRDD where each element is an integer and represents the population of a city
         JavaRDD<Integer> population = citiesPopulation.toJavaRDD().map(r -> r.getInt(2));
         // TODO: add code here to produce the output for query Q3
+        float tot_population = population.reduce(Integer::sum);
+        JavaRDD<Integer> old_population = population;
+        while(tot_population < 1e6) {
+            population = population.map(p -> p < 1000? (int)(p*0.99) : (int)(p*1.01));
+            old_population.unpersist();
+            population.cache();
+            old_population = population;
+            tot_population = population.reduce(Integer::sum);
+        }
 
         // Bookings: the value represents the city of the booking
         final Dataset<Row> bookings = spark
@@ -94,7 +103,23 @@ public class Cities {
                 .option("rowsPerSecond", 100)
                 .load();
 
-        final StreamingQuery q4 = null; // TODO query Q4
+        final Dataset<Row> regionsCities = citiesPopulation
+                .join(citiesRegions, citiesPopulation.col("city").equalTo(citiesRegions.col("city")))
+                .select("region","id");
+
+        final StreamingQuery q4 = bookings
+                .join(regionsCities, bookings.col("value").equalTo(regionsCities.col("id")))
+                .drop("value")
+                .groupBy(
+                        window(col("timestamp"), "30 seconds", "10 seconds"),
+                        col("region")
+                )
+                //.agg(count("value").as("num-bookings"))
+                .count()
+                .writeStream()
+                .outputMode("update")
+                .format("console")
+                .start();
 
         try {
             q4.awaitTermination();
