@@ -14,11 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
-<<<<<<< Updated upstream
-=======
 import static org.apache.spark.sql.functions.col;
 
->>>>>>> Stashed changes
 public class Cities {
     public static void main(String[] args) throws TimeoutException {
         final String master = args.length > 0 ? args[0] : "local[4]";
@@ -57,41 +54,14 @@ public class Cities {
                 .csv(filePath + "files/cities/cities_regions.csv");
 
         // TODO: add code here if necessary
-<<<<<<< Updated upstream
-
-        final Dataset<Row> q1 = citiesRegions
-                .join(citiesPopulation, citiesPopulation.col("id").equalTo(citiesRegions.col("city")), "inner")
-                .groupBy(citiesPopulation.col("region"))
-=======
         /*! Query 1, counts for each region the*/
         final Dataset<Row> q1 = citiesPopulation
                 .join(citiesRegions, citiesPopulation.col("city").equalTo(citiesRegions.col("city")))
                 .groupBy(citiesRegions.col("region"))
->>>>>>> Stashed changes
                 .sum("population")
                 .select("region", "sum(population)");
 
         q1.show();
-
-<<<<<<< Updated upstream
-        final Dataset<Row> mostPopulated = citiesRegions
-                .join(citiesPopulation, citiesPopulation.col("id").equalTo(citiesRegions.col("city")), "inner")
-                .groupBy(citiesPopulation.col("region"))
-                .max("population")
-                .select("region", "max(population)");
-
-        final Dataset<Row> numCities = citiesRegions
-                .groupBy("region")
-                .count()
-                .select("region","count");
-
-        final Dataset<Row> mostPopulatedCity = citiesRegions
-                .join(citiesPopulation, citiesPopulation.col("id").equalTo(citiesRegions.col("city")), "inner");
-
-
-        final Dataset<Row> q2 =
-
-=======
         final Dataset<Row> regionCityCount = citiesRegions
                 .groupBy("region")
                 .count()
@@ -110,8 +80,7 @@ public class Cities {
         final Dataset<Row> q2 = q2_pre
                 .join(regionCityCount, regionCityCount.col("region").equalTo(q2_pre.col("region")))
                 .select(regionCityCount.col("region").as("region_1"),col("max(population)"), col("count") );
-        
->>>>>>> Stashed changes
+
         q2.show();
 
         // JavaRDD where each element is an integer and represents the population of a city

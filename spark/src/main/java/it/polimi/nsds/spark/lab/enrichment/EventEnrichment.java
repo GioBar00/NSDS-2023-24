@@ -55,10 +55,7 @@ public class EventEnrichment {
 
         final Dataset<Row> inStream = spark
                 .readStream()
-<<<<<<< Updated upstream
-=======
                 /*! Rate is for debugging there is ... that creates a map with the integer value, ... Time might be growing, just for debugging*/
->>>>>>> Stashed changes
                 .format("rate")
                 .option("rowsPerSecond", 1)
                 .load();
@@ -70,18 +67,11 @@ public class EventEnrichment {
                 .schema(productClassificationSchema)
                 .csv(filePath + "files/enrichment/product_classification.csv");
 
-<<<<<<< Updated upstream
-        // TODO
-        Dataset<Row> inStreamDF = inStream.toDF("product");
-
-=======
-
         // TODO
         /*! Here we just change the columns names, for the join... */
         Dataset<Row> inStreamDF = inStream.toDF("timestamp", "product");
 
         /*! We query, creating a query and then using the stream commands we start it and print them as output in the console*/
->>>>>>> Stashed changes
         final StreamingQuery query = inStreamDF
                 .join(productsClassification, productsClassification.col("product").equalTo(inStreamDF.col("product")))
                 .groupBy(
@@ -89,16 +79,11 @@ public class EventEnrichment {
                         productsClassification.col("classification")
                 )
                 .count()
-<<<<<<< Updated upstream
-=======
                 /*! End of query and write to console + start the query*/
->>>>>>> Stashed changes
                 .writeStream()
                 .outputMode("update")
                 .format("console")
                 .start();
-<<<<<<< Updated upstream
-=======
         try {
             /*! We need to await the termination to see the terminal console while the task is running! */
             query.awaitTermination();
@@ -107,7 +92,6 @@ public class EventEnrichment {
         {
             e.printStackTrace();
         }
->>>>>>> Stashed changes
 
         spark.close();
     }

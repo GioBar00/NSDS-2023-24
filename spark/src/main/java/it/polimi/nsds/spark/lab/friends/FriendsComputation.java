@@ -44,26 +44,6 @@ public class FriendsComputation {
                 .csv(filePath + "files/friends/friends.csv");
 
         // TODO
-<<<<<<< Updated upstream
-        boolean has_changed = true;
-        long old_count = input.count();
-        long new_count = 0;
-        while(has_changed){
-            Dataset<Row> i1 = input.as("i1");
-            Dataset<Row> i2 = input.as("i2");
-            Dataset<Row> closure = i1
-                    .join(i2, i2.col("person").equalTo(i1.col("friend")))
-                    .filter(i1.col("person").notEqual(i2.col("friend")))
-                    .select(i1.col("person"),i2.col("friend"));
-            input.union(closure).distinct();
-            new_count = input.count();
-            has_changed = new_count > old_count;
-            input.cache();
-        }
-
-
-        spark.close();
-=======
         final Dataset<Row> input2 =input; // Does this really copy?
         // SELECT T.person, T2.friend FROM T, T2 WHERE T.friend in T2.person
         // T.friend = T2.person. And... Want to add, if not exists, T.person, T2.friend
@@ -76,6 +56,5 @@ public class FriendsComputation {
         spark.close();
         input.show();
         toAdd.show();
->>>>>>> Stashed changes
     }
 }
