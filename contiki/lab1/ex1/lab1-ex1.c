@@ -41,7 +41,7 @@
 
 #include <stdio.h> /* For printf() */
 
-#define MAX_QUEUE 100
+#define MAX_SIZE 100
 /*---------------------------------------------------------------------------*/
 PROCESS(ex1_consumer_process, "Hello world process");
 
@@ -51,27 +51,32 @@ AUTOSTART_PROCESSES(&ex1_producer_process, &ex1_consumer_process);
 /*---------------------------------------------------------------------------*/
 static process_event_t queue_add_event;
 static process_event_t queue_pop_event;
-static int queue[MAX_QUEUE];
+static QUEUE(data_queue);
 static int size = 0;
+//static int queue[MAX_QUEUE];
+//static int size = 0;
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(ex1_producer_process, ev, data) {
     PROCESS_BEGIN();
-
-    queue_add_event = process_alloc_event();
-        while (1) {
-            printf("Producer go brrrr\n");
-            if (size < MAX_QUEUE - 1){
-                printf("Producer: I have produced something hihi\n");
-                queue[size] = 1;
-                size ++ ;
-                process_post(&ex1_consumer_process,queue_add_event, NULL);
-                PROCESS_PAUSE();
-            }
-            else{
-                PROCESS_WAIT_EVENT_UNTIL(ev = queue_pop_event);
-            }
-
+    queue_init(data_queue);
+    //queue_add_event = process_alloc_event();
+    while (1) {
+        printf("Producer go brrrr\n");
+        if (size < MAX_SIZE - 1){
+            printf("Producer: I have produced something hihi\n");
+//            queue[size] = 1;
+//            size ++ ;
+            //process_post(&ex1_consumer_process,queue_add_event, NULL);
+            queue_enqueue(data_queue, 1);
+            size++;
+            PROCESS_PAUSE();
         }
+        else {
+            //PROCESS_WAIT_EVENT_UNTIL(ev == queue_pop_event);
+            PROCESS_YIELS_UNTIL(size < MAX_SIZE - 1);
+        }
+
+    }
 
     PROCESS_END();
 }
@@ -80,25 +85,30 @@ PROCESS_THREAD(ex1_producer_process, ev, data) {
 
 PROCESS_THREAD(ex1_consumer_process, ev, data) {
     PROCESS_BEGIN();
-        int got_message;
-        while (1) {
+    // wait for producer to initialize the queue
+    PROCESS_PAUSE();
+    //queue_pop_event = process_alloc_event();
+
+    int data;
+    while (1) {
+        printf("Consumer go brrrr\n");
+        if(size > 0)
+        {
+            //data = queue[size];
+            data = (int)queue_dequeue(data_queue);
+            size--;
+            printf("Consumer got message: %d\n", data);
+//            if(size==MAX_QUEUE-1){
+//                process_post(&ex1_producer_process,queue_pop_event, NULL);
+//            }
             PROCESS_PAUSE();
-            queue_pop_event = process_alloc_event();
-            printf("Consumer go brrrr\n");
-            if(size>0)
-            {
-                got_message = queue[size];
-                size--;
-                printf("Consumer got message: %d", got_message);
-                if(size==MAX_QUEUE-1){
-                    process_post(&ex1_producer_process,queue_pop_event, NULL);
-                }
-            }
-            else{
-                printf("No messages, sad consumer :(");
-                PROCESS_WAIT_EVENT_UNTIL(ev == queue_add_event);
-            }
         }
+        else{
+            printf("No messages, sad consumer :(");
+            //PROCESS_WAIT_EVENT_UNTIL(ev == queue_add_event);
+            PROCESS_YIELS_UNTIL(size > 0);
+        }
+    }
 
     PROCESS_END();
 }
