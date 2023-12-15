@@ -38,6 +38,7 @@
  */
 
 #include "contiki.h"
+#include "queue.h"
 
 #include <stdio.h> /* For printf() */
 
@@ -49,10 +50,11 @@ PROCESS(ex1_producer_process, "Hello world process");
 AUTOSTART_PROCESSES(&ex1_producer_process, &ex1_consumer_process);
 
 /*---------------------------------------------------------------------------*/
-static process_event_t queue_add_event;
-static process_event_t queue_pop_event;
-static QUEUE(data_queue);
+//static process_event_t queue_add_event;
+//static process_event_t queue_pop_event;
+QUEUE(data_queue);
 static int size = 0;
+static int value=1;
 //static int queue[MAX_QUEUE];
 //static int size = 0;
 /*---------------------------------------------------------------------------*/
@@ -60,20 +62,21 @@ PROCESS_THREAD(ex1_producer_process, ev, data) {
     PROCESS_BEGIN();
     queue_init(data_queue);
     //queue_add_event = process_alloc_event();
-    while (1) {
         printf("Producer go brrrr\n");
+    while (1) {
         if (size < MAX_SIZE - 1){
             printf("Producer: I have produced something hihi\n");
 //            queue[size] = 1;
 //            size ++ ;
             //process_post(&ex1_consumer_process,queue_add_event, NULL);
-            queue_enqueue(data_queue, 1);
+		            
+		queue_enqueue(data_queue, value);
             size++;
             PROCESS_PAUSE();
         }
         else {
             //PROCESS_WAIT_EVENT_UNTIL(ev == queue_pop_event);
-            PROCESS_YIELS_UNTIL(size < MAX_SIZE - 1);
+            PROCESS_YIELD_UNTIL(size < MAX_SIZE - 1);
         }
 
     }
@@ -106,7 +109,7 @@ PROCESS_THREAD(ex1_consumer_process, ev, data) {
         else{
             printf("No messages, sad consumer :(");
             //PROCESS_WAIT_EVENT_UNTIL(ev == queue_add_event);
-            PROCESS_YIELS_UNTIL(size > 0);
+            PROCESS_YIELD_UNTIL(size > 0);
         }
     }
 
