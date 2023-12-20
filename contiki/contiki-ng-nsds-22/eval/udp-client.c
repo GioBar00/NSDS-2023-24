@@ -77,7 +77,6 @@ udp_rx_callback(struct simple_udp_connection *c,
 PROCESS_THREAD(udp_client_process, ev, data) {
     uip_ipaddr_t dest_ipaddr;
     static struct etimer periodic_timer;
-    static process_event_t produce_value_event;
     static float average;
     static float value;
 
@@ -87,7 +86,6 @@ PROCESS_THREAD(udp_client_process, ev, data) {
     batched = false;
 
     PROCESS_BEGIN();
-                produce_value_event = process_alloc_event();
                 /* Initialize UDP connection */
                 simple_udp_register(&udp_conn, UDP_CLIENT_PORT, NULL,
                                     UDP_SERVER_PORT, udp_rx_callback);

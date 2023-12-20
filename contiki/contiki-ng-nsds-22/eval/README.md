@@ -16,3 +16,5 @@ average yield. After the yield it sends to the server the new value it has read.
 The Server once it receives a new value check that the sender was in the list of client it has already served, if not
 check the number of clients that has served and in case there's an available slot registers the new client and serves its
 request.
+In order to serve a request the server has a static list of values that has received, if the list is full it removes the 
+last 
