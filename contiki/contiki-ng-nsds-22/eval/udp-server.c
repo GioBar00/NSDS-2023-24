@@ -112,7 +112,7 @@ udp_rx_callback(struct simple_udp_connection *c,
     LOG_INFO_6ADDR(sender_addr);
     LOG_INFO_("\n");
 
-    batch_val(reading);
+    add_value(reading);
 
     /* Compute average */
     float average;
