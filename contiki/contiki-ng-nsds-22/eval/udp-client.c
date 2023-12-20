@@ -82,7 +82,6 @@ PROCESS_THREAD(udp_client_process, ev, data) {
     // initialize the readings
     next_reading = 0;
     len = 0;
-    batched = false;
 
     PROCESS_BEGIN();
                 /* Initialize UDP connection */
@@ -97,7 +96,7 @@ PROCESS_THREAD(udp_client_process, ev, data) {
                     /*! If connected sends the temperature every minute */
                     if (NETSTACK_ROUTING.node_is_reachable() && NETSTACK_ROUTING.get_root_ipaddr(&dest_ipaddr)) {
                         LOG_INFO("CLIENT - The server is reachable and batched: %d\n", batched);
-                        if (batched) {
+                        if (len > 0) {
                             /*! If there are batched values compute the average of them */
                             LOG_INFO(
                                     "CLIENT - There are some locally stored values... Computing avg and sending it...\n");
@@ -120,7 +119,6 @@ PROCESS_THREAD(udp_client_process, ev, data) {
                     }
                         /*! If the node is not reachable, therefore is disconnected, saves locally the lasts readings */
                     else {
-                        batched = true;
                         batch_val(value);
                         LOG_INFO("CLIENT - The server is not reachable, I am disconnected... Storing locally. Batched: %d\n", batched);
                     }
