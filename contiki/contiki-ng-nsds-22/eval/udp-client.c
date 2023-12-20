@@ -77,7 +77,6 @@ PROCESS_THREAD(udp_client_process, ev, data) {
     static struct etimer periodic_timer;
     static float average;
     static float value;
-    static bool batched;
 
     // initialize the readings
     next_reading = 0;
@@ -107,7 +106,6 @@ PROCESS_THREAD(udp_client_process, ev, data) {
                             /*! Init the buffer */
                             next_reading = 0;
                             len = 0;
-                            batched = false;
                             /**
                              * Yield. Therefore go in queue and waits to be scheduled after the other proto-threads
                              * By doing so, the buffer will be consumed
