@@ -14,4 +14,5 @@ If the client, before sending the value, discovers that it is disconnected batch
 When the client discovers that is connected if it has batched temperatures compute the average of it, after sending the 
 average yield. After the yield it sends to the server the new value it has read.
 The Server once it receives a new value check that the sender was in the list of client it has already served, if not
-check the number of clients that has served and in case there's availab
+check the number of clients that has served and in case there's an available slot registers the new client and serves its
+request.

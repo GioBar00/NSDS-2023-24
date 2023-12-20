@@ -73,10 +73,6 @@ udp_rx_callback(struct simple_udp_connection *c,
     // ...
 }
 
-/*! Callback called every minute by the ctimer for sending the temperature to server */
-static void send_temperature() {
-
-}
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(udp_client_process, ev, data) {
     uip_ipaddr_t dest_ipaddr;
