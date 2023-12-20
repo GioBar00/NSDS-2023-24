@@ -25,8 +25,6 @@ static float readings[MAX_READINGS];
 static unsigned next_reading;
 static unsigned len;
 
-static bool batched;
-
 
 /*---------------------------------------------------------------------------*/
 PROCESS(udp_client_process, "UDP client");
@@ -79,6 +77,7 @@ PROCESS_THREAD(udp_client_process, ev, data) {
     static struct etimer periodic_timer;
     static float average;
     static float value;
+    static bool batched;
 
     // initialize the readings
     next_reading = 0;
@@ -97,13 +96,14 @@ PROCESS_THREAD(udp_client_process, ev, data) {
                     value = (float) get_temperature();
                     /*! If connected sends the temperature every minute */
                     if (NETSTACK_ROUTING.node_is_reachable() && NETSTACK_ROUTING.get_root_ipaddr(&dest_ipaddr)) {
-                        LOG_INFO("CLIENT - The server is reachable\n");
+                        LOG_INFO("CLIENT - The server is reachable and batched: %d\n", batched);
                         if (batched) {
                             /*! If there are batched values compute the average of them */
                             LOG_INFO(
                                     "CLIENT - There are some locally stored values... Computing avg and sending it...\n");
                             average = compute_average();
                             /*! Sends the local average temperature */
+                            LOG_INFO("CLIENT - Sending old local average: %f\n", average);
                             simple_udp_sendto(&udp_conn, &average, sizeof(average), &dest_ipaddr);
                             /**
                              * Yield. Therefore go in queue and waits to be scheduled after the other proto-threads
@@ -120,9 +120,9 @@ PROCESS_THREAD(udp_client_process, ev, data) {
                     }
                         /*! If the node is not reachable, therefore is disconnected, saves locally the lasts readings */
                     else {
-                        LOG_INFO("CLIENT - The server is not reachable, I am disconnected... Storing locally\n");
                         batched = true;
                         batch_val(value);
+                        LOG_INFO("CLIENT - The server is not reachable, I am disconnected... Storing locally. Batched: %d\n", batched);
                     }
                     etimer_set(&periodic_timer, SEND_INTERVAL);
                 }

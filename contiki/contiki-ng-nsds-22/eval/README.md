@@ -17,4 +17,8 @@ The Server once it receives a new value check that the sender was in the list of
 check the number of clients that has served and in case there's an available slot registers the new client and serves its
 request.
 In order to serve a request the server has a static list of values that has received, if the list is full it removes the 
-last 
+last value and adds the new one.
+In our solution the server is not responsive, since it is not request we do not guarantee any type of delivery (at most 
+once, exactly one...) and the client if it cannot be served keep acting as a normal client (it doesn't terminate its normal
+execution).
+Since the program should be as light as possible we decided to schedule a
