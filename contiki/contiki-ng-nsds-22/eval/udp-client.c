@@ -22,8 +22,8 @@ static struct simple_udp_connection udp_conn;
 static struct simple_udp_connection udp_conn;
 
 static float readings[MAX_READINGS];
-static unsigned next_reading;
-static unsigned len;
+static unsigned next_reading = 0;
+static unsigned len = 0;
 
 
 /*---------------------------------------------------------------------------*/
@@ -77,10 +77,6 @@ PROCESS_THREAD(udp_client_process, ev, data) {
     static struct etimer periodic_timer;
     static float average;
     static float value;
-
-    // initialize the readings
-    next_reading = 0;
-    len = 0;
 
     PROCESS_BEGIN();
                 /* Initialize UDP connection */
