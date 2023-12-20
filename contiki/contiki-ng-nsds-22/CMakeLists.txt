@@ -3580,4 +3580,11 @@ add_executable(contiki_ng_nsds_22
         tools/wpcapslip/wpcapslip.c
         tools/wpcapslip/wpcapstdio.c
         lab1/ex4/mqtt-demo.c
-        lab1/ex4/project-conf.h)
+        lab1/ex4/project-conf.h
+        lab-sol/ex1/ex1.c
+        lab-sol/ex2/ex2.c
+        lab-sol/ex3/ex3-client.c
+        lab-sol/ex3/ex3-server.c
+        lab-redo/ex1/ex1-redo.c
+        lab-redo/ex4/mqtt-demo.c
+        lab-redo/ex4/project-conf.h)
