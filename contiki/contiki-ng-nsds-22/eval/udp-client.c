@@ -105,15 +105,15 @@ PROCESS_THREAD(udp_client_process, ev, data) {
                             /*! Sends the local average temperature */
                             LOG_INFO("CLIENT - Sending old local average: %f\n", average);
                             simple_udp_sendto(&udp_conn, &average, sizeof(average), &dest_ipaddr);
+                            /*! Init the buffer */
+                            next_reading = 0;
+                            len = 0;
+                            batched = false;
                             /**
                              * Yield. Therefore go in queue and waits to be scheduled after the other proto-threads
                              * By doing so, the buffer will be consumed
                              */
                             PROCESS_YIELD();
-                            /*! Init the buffer */
-                            next_reading = 0;
-                            len = 0;
-                            batched = false;
                         }
                         LOG_INFO("CLIENT - Sending to server reading % f\n", value);
                         simple_udp_sendto(&udp_conn, &value, sizeof(value), &dest_ipaddr);

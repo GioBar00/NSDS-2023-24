@@ -21,4 +21,5 @@ last value and adds the new one.
 In our solution the server is not responsive, since it is not request we do not guarantee any type of delivery (at most 
 once, exactly one...) and the client if it cannot be served keep acting as a normal client (it doesn't terminate its normal
 execution).
-Since the program should be as light as possible we decided to schedule a
+Since the program should be as light as possible we decided to schedule a single timer that triggers both the reading and 
+the sending. To guarantee the order of sends the process yield after the call of send of the average value.
