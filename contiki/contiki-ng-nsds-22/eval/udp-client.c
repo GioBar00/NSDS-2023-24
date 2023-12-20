@@ -110,13 +110,13 @@ PROCESS_THREAD(udp_client_process, ev, data) {
                              * Yield. Therefore go in queue and waits to be scheduled after the other proto-threads
                              * By doing so, the buffer will be consumed
                              */
-                            PROCESS_YIELD();
+                            etimer_set(&periodic_timer, 5);
+                            PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
                         }
                         LOG_INFO("CLIENT - Sending to server reading % f\n", value);
                         simple_udp_sendto(&udp_conn, &value, sizeof(value), &dest_ipaddr);
-                    }
+                    } else {
                         /*! If the node is not reachable, therefore is disconnected, saves locally the lasts readings */
-                    else {
                         batch_val(value);
                         LOG_INFO("CLIENT - The server is not reachable, I am disconnected... Storing locally.\n");
                     }
