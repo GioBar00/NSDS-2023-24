@@ -20,10 +20,11 @@ static struct simple_udp_connection udp_conn;
 #define FAKE_TEMPS 5
 
 static struct simple_udp_connection udp_conn;
-static struct ctimer send_timer;
+
 static float readings[MAX_READINGS];
-static int stored_readings;
-static unsigned len = 0;
+static unsigned next_reading;
+static unsigned len;
+
 static bool batched;
 
 
@@ -36,6 +37,28 @@ static unsigned
 get_temperature() {
     static unsigned fake_temps[FAKE_TEMPS] = {30, 25, 20, 15, 10};
     return fake_temps[random_rand() % FAKE_TEMPS];
+}
+
+static void batch_val(float value) {
+    readings[next_reading] = value;
+    next_reading++;
+    /*! In case of complete array, we overwrite cyclically, overwriting the oldest value */
+    if (next_reading >= MAX_READINGS) {
+        next_reading = 0;
+    }
+    if (len < MAX_READINGS) {
+        len++;
+    }
+}
+
+static float compute_average() {
+    float sum = 0;
+    for (int i = 0; i < len; i++) {
+        if (readings[i] != 0) {
+            sum = sum + readings[i];
+        }
+    }
+    return sum / len;
 }
 
 /*---------------------------------------------------------------------------*/
@@ -51,63 +74,64 @@ udp_rx_callback(struct simple_udp_connection *c,
 }
 
 /*! Callback called every minute by the ctimer for sending the temperature to server */
-static void send_temperature(){
-    uip_ipaddr_t dest_ipaddr;
-    // get the temperature
-    float value = (float)get_temperature();
-    /*! If connected sends the temperature every minute */
-    if(NETSTACK_ROUTING.node_is_reachable()&& NETSTACK_ROUTING.get_root_ipaddr(&dest_ipaddr)) {
-        LOG_INFO("CLIENT - The server is reachable");
-        if (batched) {
-            LOG_INFO("CLIENT - There are some locally stored values... Computing avg and sending it...");
-            // send the single value
-            unsigned sum = 0;
-            unsigned no = 0;
-            for (int i = 0; i < len; i++) {
-                if (readings[i] != 0) {
-                    sum = sum + readings[i];
-                    no++;
-                }
-            }
-            /*! Adds the last temperature reading */
-            sum += value;
-            no++;
-            value = ((float) sum) / no;
-            // free the queue
-            len = 0;
-            batched = false;
-        }
-        LOG_INFO("CLIENT - Sending to server a reading");
-        LOG_INFO("Sending reading: %f", value);
-        simple_udp_sendto(&udp_conn, &value, sizeof(value), &dest_ipaddr);
-    }
-    /*! If the node is not reachable, therefore is disconnected, saves locally the lasts readings */
-    else{
-        LOG_INFO("CLIENT - The server is not reachable, I am disconnected... Storing locally");
-        batched = true;
-        readings[stored_readings] = value;
-        stored_readings++;
-        if (stored_readings >= MAX_READINGS) {
-            stored_readings = 0;
-        }
-        if (len < MAX_READINGS) {
-            len++;
-        }
-    }
-    ctimer_set(&send_timer, SEND_INTERVAL, send_temperature, NULL);
+static void send_temperature() {
+
 }
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(udp_client_process, ev, data) {
+    uip_ipaddr_t dest_ipaddr;
+    static struct etimer periodic_timer;
+    static process_event_t produce_value_event;
+    static float average;
+    static float value;
+
+    // initialize the readings
+    next_reading = 0;
+    len = 0;
+    batched = false;
 
     PROCESS_BEGIN();
-                stored_readings = 0;
-                batched = false;
+                produce_value_event = process_alloc_event();
                 /* Initialize UDP connection */
                 simple_udp_register(&udp_conn, UDP_CLIENT_PORT, NULL,
                                     UDP_SERVER_PORT, udp_rx_callback);
-                LOG_INFO("CLIENT - I have registered an udp connection to the server");
                 /*! Sets the timer s.t. every SEND_INTERVAL reads the temperature and sends it to the server */
-                ctimer_set(&send_timer, SEND_INTERVAL, send_temperature, NULL);
+                etimer_set(&periodic_timer, SEND_INTERVAL);
+                while (1) {
+                    PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&periodic_timer));
+                    // get the temperature
+                    value = (float) get_temperature();
+                    /*! If connected sends the temperature every minute */
+                    if (NETSTACK_ROUTING.node_is_reachable() && NETSTACK_ROUTING.get_root_ipaddr(&dest_ipaddr)) {
+                        LOG_INFO("CLIENT - The server is reachable\n");
+                        if (batched) {
+                            /*! If there are batched values compute the average of them */
+                            LOG_INFO(
+                                    "CLIENT - There are some locally stored values... Computing avg and sending it...\n");
+                            average = compute_average();
+                            /*! Sends the local average temperature */
+                            simple_udp_sendto(&udp_conn, &average, sizeof(average), &dest_ipaddr);
+                            /**
+                             * Yield. Therefore go in queue and waits to be scheduled after the other proto-threads
+                             * By doing so, the buffer will be consumed
+                             */
+                            PROCESS_YIELD();
+                            /*! Init the buffer */
+                            next_reading = 0;
+                            len = 0;
+                            batched = false;
+                        }
+                        LOG_INFO("CLIENT - Sending to server reading % f\n", value);
+                        simple_udp_sendto(&udp_conn, &value, sizeof(value), &dest_ipaddr);
+                    }
+                        /*! If the node is not reachable, therefore is disconnected, saves locally the lasts readings */
+                    else {
+                        LOG_INFO("CLIENT - The server is not reachable, I am disconnected... Storing locally\n");
+                        batched = true;
+                        batch_val(value);
+                    }
+                    etimer_set(&periodic_timer, SEND_INTERVAL);
+                }
 
     PROCESS_END();
 }

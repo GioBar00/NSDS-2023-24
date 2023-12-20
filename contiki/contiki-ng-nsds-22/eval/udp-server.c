@@ -80,7 +80,8 @@ static bool can_process_client(const uip_ipaddr_t *sender_addr) {
     if (receivers_len < MAX_RECEIVERS) {
         LOG_INFO("Added new client ");
         LOG_INFO_6ADDR(sender_addr);
-        LOG_INFO_("\nAvailable slots %d\n", MAX_RECEIVERS - receivers_len);
+        LOG_INFO_("\n");
+        LOG_INFO_("Available slots %d\n", MAX_RECEIVERS - receivers_len);
         uip_ipaddr_copy(&receivers[receivers_len], sender_addr);
         receivers_len++;
         return true;
@@ -111,7 +112,7 @@ udp_rx_callback(struct simple_udp_connection *c,
     LOG_INFO_6ADDR(sender_addr);
     LOG_INFO_("\n");
 
-    add_value(reading);
+    batch_val(reading);
 
     /* Compute average */
     float average;
