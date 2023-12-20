@@ -6,8 +6,7 @@
 
 - Andrea Alari - 10707336
 - Giovanni Barbiero - 10722159
-- Nicolo' Caruso - 
-
+- Nicolo' Caruso - 10705618
 ## Solution description
 In our solution the Client schedule an etimer with duration SEND_INTERVAL.
 If the client, before sending the value, discovers that it is disconnected batches the value and reschedule the timer.
