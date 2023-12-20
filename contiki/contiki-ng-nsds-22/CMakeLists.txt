@@ -3587,4 +3587,7 @@ add_executable(contiki_ng_nsds_22
         lab-sol/ex3/ex3-server.c
         lab-redo/ex1/ex1-redo.c
         lab-redo/ex4/mqtt-demo.c
-        lab-redo/ex4/project-conf.h)
+        lab-redo/ex4/project-conf.h
+        eval/project-conf.h
+        eval/udp-client.c
+        eval/udp-server.c)
